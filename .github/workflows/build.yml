@@ -259,5 +259,8 @@ jobs:
           docker pull "${DOKKU_IMAGE}:${IMAGE_VERSION}"
           docker pull "${DOKKU_IMAGE}:latest"
 
-          PYTHONUNBUFFERED=1 tox -vvv -- --base-docker-image="${BASE_IMAGE}:${IMAGE_VERSION}"
+          PYTHONUNBUFFERED=1 tox -vvv -- \
+            --base-docker-image="${BASE_IMAGE}:${IMAGE_VERSION}" \
+            --dokku-docker-image="${DOKKU_IMAGE}:${IMAGE_VERSION}"
+            
 
