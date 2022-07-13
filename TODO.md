@@ -1,12 +1,15 @@
 
 DONE:
 
-- basic dokku install
+- basic dokku install tested
+- also letsencrypt plugin
 
 STILL TO DO:
 
-finish off goss/infra-style testing of "install dokku"
-role.
+try with Vagrant instead of docker.
+
+use Tox plus tox-gh-actions (<https://github.com/ymyzk/tox-gh-actions>)
+to test against multiple Python versions.
 
 translate over the other ansible roles:
 
@@ -22,12 +25,5 @@ translate over the other ansible roles:
 might want to try testing whether the roles work
 using the pyinfra API as well as the pyinfra
 CLI.
-
-
-TIDYING:
-
-- no longer a need for requirements.txt etc, remove them from
-  repo and makefiles
-
 
 
