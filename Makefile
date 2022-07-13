@@ -1,7 +1,7 @@
 
 .PHONY: \
 	clean							\
-	docker-build      \
+	docker-build-base \
 	docker-shell      \
 	docker-test-deploy \
 	py-prereqs        \

@@ -12,12 +12,20 @@ from time    import sleep
 import pytest
 import testinfra
 
-@pytest.fixture
-def docker_base_container():
+def verbose_run(cmd, **kwargs):
+  logging.info(f"running cmd: {cmd}")
+  # pylint: disable=subprocess-run-check
+  return subprocess.run(cmd, **kwargs)
 
+
+
+@pytest.fixture
+def docker_base_container(base_docker_image):
+
+  logging.info(f"using docker base image: {base_docker_image}")
   # pylint: disable=line-too-long
-  cmd  = "docker -D run --privileged --cap-add SYS_ADMIN -v /sys/fs/cgroup:/sys/fs/cgroup:ro --rm --name dokku-ctr -d phlummox/focal-base:0.1"
-  res = subprocess.run(["bash", "-c", cmd], capture_output=True, check=True, encoding="utf8")
+  cmd  = f"docker -D run --privileged --cap-add SYS_ADMIN -v /sys/fs/cgroup:/sys/fs/cgroup:ro --rm --name dokku-ctr -d {base_docker_image}"
+  res = verbose_run(["bash", "-c", cmd], capture_output=True, check=True, encoding="utf8")
   ctr_id = res.stdout.strip()
 
   logging.info(f"got ctr id: {ctr_id}, now sleeping")
@@ -38,6 +46,7 @@ def test_dokku_install_with_docker(docker_base_container, caplog):
   # pylint: disable=line-too-long
   cmd = f"pyinfra -vv --debug --data fqdn=localhost.lan @docker/{ctr_id} ./tests/deploy_scripts/install.py"
   # pylint: disable=consider-using-with
+  logging.info(f"starting Popen for command: {cmd}")
   proc = subprocess.Popen(["script", "-ef", "-c", cmd],
                           bufsize=0,
                           stdout=subprocess.PIPE,

@@ -199,6 +199,65 @@ jobs:
           docker tag ${IMAGE_OUT}:${IMAGE_VERSION} ${IMAGE_OUT}:latest
           docker push ${IMAGE_OUT}:latest
 
+  test-with-docker:
+    runs-on: ubuntu-20.04
+    needs: [build-docker-dokku]
 
+    steps:
+      - uses: actions/checkout@v2
+        name: Check out code
 
+      - name: Log in to github Container registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: set docker image info
+        id: info
+        shell: bash
+        run: |
+          set -x
+
+          IMAGE_VERSION=$(make print-image-version)
+          echo "::set-output name=IMAGE_VERSION::${IMAGE_VERSION}"
+
+      - name: check info ok
+        run: |
+
+          IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
+          printf 'IMAGE_VERSION is: <<%s>>\n' "${IMAGE_VERSION}"
+          if [ -z ${IMAGE_VERSION} ]; then
+            false
+          fi
+
+      - name: install packages
+        shell: bash
+        run: |
+          set -x
+
+          python3 -m pip install tox
+
+          tox --version
+
+      - name: Test using docker
+        shell: bash
+        run: |
+          set -x
+
+          BASE_IMAGE="${{ env.REGISTRY }}/${{ github.repository }}/focal-base"
+          DOKKU_IMAGE="${{ env.REGISTRY }}/${{ github.repository }}/focal-dokku"
+          IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
+
+          # "
+
+          docker pull "${BASE_IMAGE}:${IMAGE_VERSION}"
+          docker pull "${BASE_IMAGE}:latest"
+
+          docker pull "${DOKKU_IMAGE}:${IMAGE_VERSION}"
+          docker pull "${DOKKU_IMAGE}:latest"
+
+          PYTHONUNBUFFERED=1 tox -vvv -- --base-docker-image="${BASE_IMAGE}:${IMAGE_VERSION}"
 
