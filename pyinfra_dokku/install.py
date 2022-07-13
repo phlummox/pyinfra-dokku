@@ -290,7 +290,7 @@ def install_letsencrypt_plugin():
     )
 
   python.call(
-    name='check Dokku was configured correctly',
+    name='check letsencrypt got installed',
     function=check_letsencrypt_installed,
   )
 
