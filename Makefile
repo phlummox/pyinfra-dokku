@@ -124,16 +124,9 @@ docker-build-base:
 
 # build docker image used for tests
 # with dokku installed
-docker-build-dokku: docker-build-base
-	set -evx && \
-	ctr="$$(docker -D run $(DOCKER_ARGS) --name dokku-ctr -d phlummox/$(IMAGE_NAME):$(IMAGE_VERSION))" && \
-	function tearDown { docker stop -t 0 $$ctr; } && \
-	trap tearDown EXIT && \
-	sleep 4 && \
-	$(ACTIVATE) && \
-	$(call RUN_PYINFRA,@docker/$$ctr,./tests/deploy_scripts/install.py) && \
-	docker -D commit dokku-ctr phlummox/focal-dokku:0.1
-
+docker-build-dokku:
+	./tests/dockerfiles/build-dokku-image.sh \
+		"phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)" "phlummox/focal-dokku:$(IMAGE_VERSION)"
 
 # is --privileged needed?
 DOCKER_ARGS = --privileged --cap-add SYS_ADMIN \

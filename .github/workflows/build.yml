@@ -78,9 +78,6 @@ jobs:
           fi
 
 
-      # really, this is just using info that _mostly_
-      # could've been got from makefile.
-      # But some is from CI environment.
       - name: Build Docker image
         shell: bash
         run: |
@@ -89,7 +86,6 @@ jobs:
           export IMAGE_NAME="${{ steps.info.outputs.IMAGE_NAME }}"
           export GH_IMAGE_ID="${{ env.REGISTRY }}/${{ github.repository }}/${{ steps.info.outputs.IMAGE_NAME }}"
           export IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
-          export REPO_OWNER="${{ github.repository_owner }}"
 
           echo "${{ steps.meta.outputs.labels }}" > oc_labels
           # "
@@ -110,5 +106,99 @@ jobs:
           docker push ${GH_IMAGE_ID}:${IMAGE_VERSION}
           docker tag ${GH_IMAGE_ID}:${IMAGE_VERSION} ${GH_IMAGE_ID}:latest
           docker push ${GH_IMAGE_ID}:latest
+
+  build-docker-dokku:
+    runs-on: ubuntu-20.04
+    needs: [build-docker-base]
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Check out code
+
+      - name: Log in to github Container registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: set docker image info
+        id: info
+        shell: bash
+        run: |
+          set -x
+
+          IMAGE_VERSION=$(make print-image-version)
+          echo "::set-output name=IMAGE_VERSION::${IMAGE_VERSION}"
+
+      - name: check info ok
+        run: |
+
+          IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
+          printf 'IMAGE_VERSION is: <<%s>>\n' "${IMAGE_VERSION}"
+          if [ -z ${IMAGE_VERSION} ]; then
+            false
+          fi
+
+      - name: install packages
+        shell: bash
+        run: |
+          set -x
+
+          python3 -m venv env
+
+          . ./env/bin/activate
+
+          python3 -m pip install --upgrade pip wheel
+          python3 -m pip install ".[test]"
+
+          python3 --version
+          python3 -m pip list
+
+          pyinfra --version
+
+
+      # doesn't re-build if we already have a dokku image
+      # with the right version
+      - name: Build Dokku image on top of base
+        shell: bash
+        run: |
+          set -x
+
+          export IMAGE_IN="${{ env.REGISTRY }}/${{ github.repository }}/focal-base"
+          export IMAGE_OUT="${{ env.REGISTRY }}/${{ github.repository }}/focal-dokku"
+          export IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
+
+          # "
+
+          docker pull "${IMAGE_IN}:${IMAGE_VERSION}"
+          docker pull "${IMAGE_IN}:latest"
+
+          already_got_dokku_img=1
+          docker pull "${IMAGE_OUT}:${IMAGE_VERSION}" || already_got_dokku_img=0
+
+          if ((already_got_dokku_img != 1)); then
+            . ./env/bin/activate;
+            ./tests/dockerfiles/build-dokku-image.sh "${IMAGE_IN}:${IMAGE_VERSION}" "${IMAGE_OUT}:${IMAGE_VERSION}";
+          fi
+
+      - name: push to github registry
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -x
+          set -euo pipefail
+
+          export IMAGE_OUT="${{ env.REGISTRY }}/${{ github.repository }}/focal-dokku"
+          export IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
+
+          # "
+
+          docker push ${IMAGE_OUT}:${IMAGE_VERSION}
+          docker tag ${IMAGE_OUT}:${IMAGE_VERSION} ${IMAGE_OUT}:latest
+          docker push ${IMAGE_OUT}:latest
+
+
 
 
