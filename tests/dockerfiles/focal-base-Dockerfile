@@ -1,0 +1,49 @@
+
+FROM ubuntu:focal-20220531@sha256:fd92c36d3cb9b1d027c4d2a72c6bf0125da82425fc2ca37c414d4f010180dc19
+
+
+RUN \
+  apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    bzip2             \
+    ca-certificates   \
+    coreutils         \
+    curl              \
+    docker.io         \
+    file              \
+    gpg               \
+    locales           \
+    lsb-release       \
+    make              \
+    netbase           \
+    openssh-client    \
+    openssh-server    \
+    openssl           \
+    rsync             \
+    software-properties-common \
+    sudo              \
+    time              \
+    tzdata            \
+    xz-utils          \
+  && \
+  # Remove unnecessary stuff
+  apt-get autoclean &&  \
+  apt-get clean -y &&   \
+  apt-get --purge -y autoremove && \
+  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+ARG USER_NAME=user
+ARG USER_ID=1000
+ARG USER_GID=1000
+
+RUN : "adding user" && \
+  set -x; \
+  addgroup --gid ${USER_GID} ${USER_NAME} && \
+  adduser --home /home/${USER_NAME} --disabled-password --shell /bin/bash --gid ${USER_GID} --uid ${USER_ID} --gecos '' user && \
+  echo '%user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+ENV container docker
+VOLUME [ "/sys/fs/cgroup" ]
+CMD ["/lib/systemd/systemd"]
+
+# vim: syntax=dockerfile :

@@ -1,0 +1,24 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  config.vm.define "dokku_ubu2004" do |dku|
+
+    dku.vm.box = "generic/ubuntu2004"
+
+    dku.vm.provider "virtualbox" do |vb|
+      # Customize the amount of memory on the VM
+      vb.memory = "700"
+      vb.name = "dokku_ubu2004"
+    end
+
+    # Enable provisioning with a shell script.
+    # config.vm.provision "shell", inline: <<-SHELL
+    #   apt-get update
+    #   apt-get install -y apache2
+    # SHELL
+  end
+end
