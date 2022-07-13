@@ -1,0 +1,48 @@
+
+name: build
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore:
+      - '**/*.md'
+    # Publish semver tags as releases.
+    #tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - '**/*.md'
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-docker-base:
+    env:
+      IMAGE_NAME: phlummox/focal-base
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Log in to github Container registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: print stuff
+        run: |
+          printf 'tags are: <<%s>>\n' "${{ steps.meta.outputs.tags }}"
+          printf 'tags labels are: <<%s>>\n' "${{ steps.meta.outputs.labels }}"
+          printf 'repos is: <<%s>>\n' "${{ github.repository }}"
+
+
