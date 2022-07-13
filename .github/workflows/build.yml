@@ -1,29 +1,37 @@
 
 name: build
 
+
+
 on:
   push:
-    branches: [ master ]
+    #branches: [ master ]
     paths-ignore:
-      - '**/*.md'
+      - '**.md'
+      - '.gitignore'
+      - '.dockerignore'
     # Publish semver tags as releases.
     #tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ master ]
     paths-ignore:
-      - '**/*.md'
+      - '**.md'
+      - '.gitignore'
+      - '.dockerignore'
+  #release:
+  #  types:
+  #    - created
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
   build-docker-base:
-    env:
-      IMAGE_NAME: phlummox/focal-base
     runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v2
+        name: Check out code
 
       - name: Log in to github Container registry
         if: github.event_name != 'pull_request'
@@ -39,10 +47,68 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: print stuff
+      - name: display metadata stuff
         run: |
           printf 'tags are: <<%s>>\n' "${{ steps.meta.outputs.tags }}"
           printf 'tags labels are: <<%s>>\n' "${{ steps.meta.outputs.labels }}"
           printf 'repos is: <<%s>>\n' "${{ github.repository }}"
+
+      - name: set docker image info
+        id: info
+        shell: bash
+        run: |
+          set -x
+          IMAGE_NAME=$(make print-image-name)
+          IMAGE_VERSION=$(make print-image-version)
+          echo "::set-output name=IMAGE_NAME::${IMAGE_NAME}"
+          echo "::set-output name=IMAGE_VERSION::${IMAGE_VERSION}"
+
+      - name: check info ok
+        run: |
+          IMAGE_NAME="${{ steps.info.outputs.IMAGE_NAME }}"
+          printf 'IMAGE_NAME is: <<%s>>\n' "${IMAGE_NAME}"
+          if [ -z ${IMAGE_NAME} ]; then
+            false
+          fi
+
+          IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
+          printf 'IMAGE_VERSION is: <<%s>>\n' "${IMAGE_VERSION}"
+          if [ -z ${IMAGE_VERSION} ]; then
+            false
+          fi
+
+
+      # really, this is just using info that _mostly_
+      # could've been got from makefile.
+      # But some is from CI environment.
+      - name: Build Docker image
+        shell: bash
+        run: |
+          set -x
+
+          export IMAGE_NAME="${{ steps.info.outputs.IMAGE_NAME }}"
+          export GH_IMAGE_ID="${{ env.REGISTRY }}/${{ github.repository }}/${{ steps.info.outputs.IMAGE_NAME }}"
+          export IMAGE_VERSION="${{ steps.info.outputs.IMAGE_VERSION }}"
+          export REPO_OWNER="${{ github.repository_owner }}"
+
+          echo "${{ steps.meta.outputs.labels }}" > oc_labels
+          # "
+
+          ./tests/dockerfiles/build.py tests/dockerfiles/focal-base-Dockerfile
+
+      - name: push to github registry
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -x
+          set -euo pipefail
+
+          GH_IMAGE_ID=${{ env.REGISTRY }}/${{ github.repository }}/${{ steps.info.outputs.IMAGE_NAME }}
+          IMAGE_VERSION=${{ steps.info.outputs.IMAGE_VERSION }}
+
+          #docker push ${GH_IMAGE_ID}:${IMAGE_VERSION}-builder
+          docker push ${GH_IMAGE_ID}:${IMAGE_VERSION}
+          docker tag ${GH_IMAGE_ID}:${IMAGE_VERSION} ${GH_IMAGE_ID}:latest
+          docker push ${GH_IMAGE_ID}:latest
 
 

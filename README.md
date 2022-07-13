@@ -1,5 +1,7 @@
 # pyinfra-dokku
 
+[![build](https://github.com/phlummox/pyinfra-dokku/actions/workflows/build.yml/badge.svg)](https://github.com/phlummox/pyinfra-dokku/actions/workflows/build.yml)
+
 [PyInfra](https://pyinfra.com) package for installing and configuring
 [Dokku](https://dokku.com) on a host.
 
