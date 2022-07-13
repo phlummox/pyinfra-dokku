@@ -28,7 +28,7 @@ if __name__ == '__main__':
     install_requires=('pyinfra>=2'),
     extras_require  ={'test': ['coverage',
                                'pytest',
-                               'testinfra',
+                               'pytest-testinfra',
                               ]
                      },
     author          ='phlummox',
