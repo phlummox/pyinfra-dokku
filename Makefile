@@ -2,6 +2,7 @@
 .PHONY: \
 	clean							\
 	docker-build-base \
+	docker-build-dokku \
 	docker-shell      \
 	docker-test-deploy \
 	py-prereqs        \
@@ -71,7 +72,9 @@ pytest:
 
 # requires tox to be on the path
 tox:
-	PYTHONUNBUFFERED=1 $(TOX) -vvv -epy38
+	PYTHONUNBUFFERED=1 $(TOX) -vvv -epy38 \
+		-- --base-docker-image="phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)" \
+			--dokku-docker-image="phlummox/focal-dokku:$(IMAGE_VERSION)"
 
 lint:
 	$(TOX) -elint
