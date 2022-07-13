@@ -101,7 +101,7 @@ def run_pyinfra(inventory: str, deploy_script, data=None):
   logging.info(f"starting Popen for command: {cmd}")
 
 
-  with subprocess.Popen(["script", "-ef", "-c", cmd],
+  with subprocess.Popen(["bash", "-c", cmd],
                           bufsize=0,
                           stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT,
