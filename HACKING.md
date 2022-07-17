@@ -3,13 +3,12 @@
 
 - clone repo and cd in
 - `make env` and `. activate`
-- `make py-prereqs`
 - `python3 -m pip install -e ".[test]"`
 
 ## key libraries used
 
 - pyinfra, for installing/provisioning, obviously
-- testinfra, for testing whether provisioning worked
+- pytest-testinfra, for testing whether provisioning worked
 
 ## directory structure
 
@@ -31,4 +30,21 @@ important directories are:
 - tests/dockerfiles:
 
   Dockerfiles used in tests
+
+## Tests
+
+Run tests with `pytest tests`. The output of commands like `vagrant` and `pyinfra` isn't
+shown by default; pass `--log-cli-level=DEBUG` to see it.
+
+Tests that use Docker or Vagrant containers aren't run by default (they
+are disabled in `setup.cfg`), since Docker and Vagrant may not be
+available on some platforms. To run them, use `pytest -m docker` and
+`pytest -m vagrant`, respectively.
+
+The project adds some custom command-line options to `pytest`, run
+`pytest --help` to get details. But at the time of writing, they are:
+
+- `--base-docker-image`
+- `--dokku-docker-image`
+- `--keep-containers`
 

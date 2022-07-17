@@ -29,6 +29,7 @@ if __name__ == '__main__':
     extras_require  ={'test': ['coverage',
                                'pytest',
                                'pytest-testinfra',
+                               'filelock',
                               ]
                      },
     author          ='phlummox',

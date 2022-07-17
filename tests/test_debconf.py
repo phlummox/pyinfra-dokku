@@ -3,7 +3,7 @@
 test pyinfra_dokku.util.debconf module
 """
 
-# pylint: disable=missing-class-docstring,missing-function-docstring
+# pylint: disable=missing-class-docstring,missing-function-docstring,line-too-long,no-self-use
 
 import pytest
 

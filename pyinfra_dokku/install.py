@@ -149,6 +149,8 @@ def install_dokku():
   that, like "myapp.example.io"
   """
 
+  # TODO: why isn't config.SUDO working? why is _sudo needed
+  # for all ops?
   config.SUDO = True
 
   assert host.get_fact(LinuxName) == 'Ubuntu'
@@ -175,12 +177,14 @@ def install_dokku():
       'wget',
     ],
     update=True,
+    _sudo=True,
   )
 
   # pylint: disable=unexpected-keyword-arg
   apt.key(
     name="Install Dokku apt key",
     src="https://packagecloud.io/dokku/dokku/gpgkey",
+    _sudo=True,
   )
 
   lsb_info = host.get_fact(LsbRelease)
@@ -195,9 +199,12 @@ def install_dokku():
         f"deb {DOKKU_APT_REPO}/{linux_id}/ {code_name} main"
     ),
     filename="dokku",
+    _sudo=True,
   )
 
-  has_root_id = host.get_fact(File, ROOT_ID_PATH)
+  # do we need sudo perms, since this is one of root's
+  # files?
+  has_root_id = host.get_fact(File, ROOT_ID_PATH, sudo=True,)
 
   if not has_root_id:
     server.shell(
@@ -205,6 +212,7 @@ def install_dokku():
       commands=(
           f"sudo ssh-keygen -t rsa -C root@localhost -q -f {ROOT_ID_PATH} -N ''"
       ),
+      _sudo=True,
     )
 
   fqdn = host.data.get("fqdn")
@@ -243,6 +251,7 @@ def install_dokku():
           dokku_configure_script
       ),
       _shell_executable='bash',
+      _sudo=True,
     )
 
     apt.packages(
@@ -250,6 +259,7 @@ def install_dokku():
       packages="dokku",
       force=True,
       update=True,
+      _sudo=True,
     )
 
   python.call(
@@ -278,6 +288,7 @@ def install_letsencrypt_plugin():
       commands=(
           "dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git"
       ),
+      _sudo=True,
     )
 
     # adds a cron job to /var/spool/cron/crontabs/dokku
@@ -287,6 +298,7 @@ def install_letsencrypt_plugin():
       commands=(
           "dokku letsencrypt:cron-job --add"
       ),
+      _sudo=True,
     )
 
   python.call(
