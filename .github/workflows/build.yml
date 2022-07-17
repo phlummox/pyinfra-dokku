@@ -199,9 +199,58 @@ jobs:
           docker tag ${IMAGE_OUT}:${IMAGE_VERSION} ${IMAGE_OUT}:latest
           docker push ${IMAGE_OUT}:latest
 
+  lint:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Check out code
+
+      - name: install packages
+        shell: bash
+        run: |
+          set -x
+
+          python3 -m pip install tox
+
+          tox --version
+
+      - name: Lint
+        shell: bash
+        run: |
+          set -x
+
+          tox -v -elint
+
+  unit-tests:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Check out code
+
+      - name: install packages
+        shell: bash
+        run: |
+          set -x
+
+          python3 -m pip install tox
+
+          tox --version
+
+      - name: Unit tests
+        shell: bash
+        run: |
+          set -x
+
+          tox -v -epy38
+
+
   test-with-docker:
     runs-on: ubuntu-20.04
-    needs: [build-docker-dokku]
+    needs:
+      - build-docker-dokku
+      - unit-tests
 
     steps:
       - uses: actions/checkout@v2
@@ -242,7 +291,7 @@ jobs:
 
           tox --version
 
-      - name: Test using docker
+      - name: Tests using docker
         shell: bash
         run: |
           set -x
@@ -259,8 +308,34 @@ jobs:
           docker pull "${DOKKU_IMAGE}:${IMAGE_VERSION}"
           docker pull "${DOKKU_IMAGE}:latest"
 
-          PYTHONUNBUFFERED=1 tox -vvv -- \
+          PYTHONUNBUFFERED=1 tox -vvv -epy38 -- \
+            -m docker \
             --base-docker-image="${BASE_IMAGE}:${IMAGE_VERSION}" \
             --dokku-docker-image="${DOKKU_IMAGE}:${IMAGE_VERSION}"
-            
+
+  test-with-vagrant:
+    runs-on: macos-10.15
+    needs:
+      - unit-tests
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Check out code
+
+      - name: install packages
+        shell: bash
+        run: |
+          set -x
+
+          python3 -m pip install --upgrade pip tox
+
+          tox --version
+
+      - name: Tests using vagrant
+        shell: bash
+        run: |
+          set -x
+
+          PYTHONUNBUFFERED=1 tox -vvv -epy39 -- \
+            -m vagrant
 
