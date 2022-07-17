@@ -6,7 +6,8 @@
 install and configure Dokku on an Ubuntu server
 """
 
-from io import BytesIO
+from io     import BytesIO
+from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
 
 from pyinfra              import config, host, logger
 from pyinfra.api          import deploy
@@ -24,7 +25,7 @@ from .util.dokku_plugins  import parse_plugins
 DOKKU_APT_REPO  = 'https://packagecloud.io/dokku/dokku'
 ROOT_ID_PATH    = '/root/.ssh/id_rsa'
 
-def get_expected_debconf_values(fqdn : str):
+def get_expected_debconf_values(fqdn : str) -> Mapping[Tuple[str,str],str]:
   """
   return a dict containing the expected (parsed) values
   from `debconf-show dokku`.

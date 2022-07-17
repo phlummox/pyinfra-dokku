@@ -4,7 +4,9 @@
 parse debconf format
 """
 
-def parse_debconf(inp):
+from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union, cast
+
+def parse_debconf(inp: Union[str,Sequence[str]]) -> Mapping[Tuple[str,str],str] :
   """
   parse output of `debconf-show`, e.g. something like
 
@@ -19,9 +21,9 @@ def parse_debconf(inp):
   """
 
   try:
-    lines = inp.splitlines()
+    lines = cast(str, inp).splitlines()
   except AttributeError:
-    lines = inp
+    lines = cast(List[str], inp)
 
   lines = [line.strip('* ') for line in lines]
   result = {}

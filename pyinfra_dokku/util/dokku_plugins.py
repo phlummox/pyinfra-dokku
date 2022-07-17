@@ -4,7 +4,9 @@
 parse list of dokku plugins
 """
 
-def parse_plugins(inp):
+from typing import List, Sequence, Union, cast
+
+def parse_plugins(inp: Union[str,Sequence[str]]):
   """
   parse output of `dokku plugin:list`, e.g. something like
 
@@ -24,9 +26,9 @@ def parse_plugins(inp):
   """
 
   try:
-    lines = inp.splitlines()
+    lines = cast(str, inp).splitlines()
   except AttributeError:
-    lines = inp
+    lines = cast(List[str], inp)
 
   lines = [line.strip() for line in lines]
   result = {}

@@ -1,11 +1,10 @@
 
 .PHONY: \
-	clean							\
-	docker-build-base \
+	clean              \
+	docker-build-base  \
 	docker-build-dokku \
-	docker-shell      \
+	docker-shell       \
 	docker-test-deploy \
-	py-prereqs        \
 	pytest            \
 	run               \
 	vagrant-destroy   \
@@ -24,10 +23,10 @@ SHELL=bash
 ######
 
 PYTHON3 = python3.8
-PIP			= $(PYTHON3) -m pip
+PIP     = $(PYTHON3) -m pip
 PYTEST  = $(PYTHON3) -m pytest
 PYINFRA = pyinfra
-TOX			= tox
+TOX     = tox
 
 USE_VIRTUALENV=true
 
@@ -54,27 +53,38 @@ print-image-version:
 
 env:
 	$(PYTHON3) -m venv env
-	.	activate && \
-			$(PIP) install --upgrade pip wheel pip-utils
+	. activate && \
+	  $(PIP) install --upgrade pip wheel pip-utils
+
+env-and-install:
+	$(PYTHON3) -m venv env
+	. activate && \
+	  $(PIP) install --upgrade pip wheel virtualenv pip-tools && \
+	  $(PIP) install -e '.[test]'
+
 
 run:
 	$(ACTIVATE) && \
-	$(PYINFRA) -v inventory.py deploy.py
+	  $(PYINFRA) -v inventory.py deploy.py
 
 VAGRANT_VAGRANTFILE=tests/vagrantfiles/ubuntu2004
 
 vagrant-ssh:
 	VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) vagrant ssh
 
+vagrant-status:
+	VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) vagrant status
+
+
 pytest:
 	$(ACTIVATE) && \
-	PYTHONUNBUFFERED=1 $(PYTEST) --verbosity=3 --log-cli-level=INFO --color=yes tests
+	  PYTHONUNBUFFERED=1 $(PYTEST) --verbosity=3 --log-cli-level=INFO --color=yes tests
 
 # requires tox to be on the path
 tox:
 	PYTHONUNBUFFERED=1 $(TOX) -vvv -epy38 \
-		-- --base-docker-image="phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)" \
-			--dokku-docker-image="phlummox/focal-dokku:$(IMAGE_VERSION)"
+	  -- --base-docker-image="phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)" \
+	  --dokku-docker-image="phlummox/focal-dokku:$(IMAGE_VERSION)"
 
 lint:
 	$(TOX) -elint
@@ -94,13 +104,13 @@ DOKKU_FQDN=localhost.lan
 #
 # example of calling:
 #
-#		$(call RUN_PYINFRA,@vagrant/dokku_ubu2004,./tests/deploy_scripts/install.py)
+#    $(call RUN_PYINFRA,@vagrant/dokku_ubu2004,./tests/deploy_scripts/install.py)
 RUN_PYINFRA = \
 	$(PYINFRA) $(PYINFRA_ARGS) \
-		--data fqdn=$(DOKKU_FQDN) \
-		$(1) $(2)
+	  --data fqdn=$(DOKKU_FQDN) \
+	  $(1) $(2)
 
-VAGRANT_UP 			= VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) vagrant up
+VAGRANT_UP      = VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) vagrant up
 VAGRANT_DESTROY = VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) vagrant destroy --force
 
 vagrant-up:
@@ -112,8 +122,8 @@ vagrant-destroy:
 vagrant-test:
 	VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) vagrant up
 	$(ACTIVATE) && \
-		VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) \
-			$(call RUN_PYINFRA,@vagrant/dokku_ubu2004,./tests/deploy_scripts/install.py)
+	  VAGRANT_VAGRANTFILE=$(VAGRANT_VAGRANTFILE) \
+	  $(call RUN_PYINFRA,@vagrant/dokku_ubu2004,./tests/deploy_scripts/install.py)
 
 DOCKERFILE=tests/dockerfiles/focal-base-Dockerfile
 
@@ -121,32 +131,32 @@ DOCKERFILE=tests/dockerfiles/focal-base-Dockerfile
 # build of base docker image used for tests
 docker-build-base:
 	docker -D build \
-		-t phlummox/$(IMAGE_NAME):$(IMAGE_VERSION) \
-		-f $(DOCKERFILE) \
-		tests/dockerfiles/
+	  -t phlummox/$(IMAGE_NAME):$(IMAGE_VERSION) \
+	  -f $(DOCKERFILE) \
+	  tests/dockerfiles/
 
 # build docker image used for tests
 # with dokku installed
 docker-build-dokku:
 	./tests/dockerfiles/build-dokku-image.sh \
-		"phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)" "phlummox/focal-dokku:$(IMAGE_VERSION)"
+	  "phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)" "phlummox/focal-dokku:$(IMAGE_VERSION)"
 
 # is --privileged needed?
 DOCKER_ARGS = --privileged --cap-add SYS_ADMIN \
 	-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-	--rm
+	  --rm
 
 # run quick-and-dirty docker shell
 docker-shell:
 	docker -D run $(DOCKER_ARGS) -it --net=host --name dokku-shell-ctr \
-		-v $$PWD:/work \
-    phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)
+	  -v $$PWD:/work \
+	  phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)
 
 # start quick-and-dirty docker server instance
 docker-server:
 	docker -D run $(DOCKER_ARGS) --name dokku-ctr -it \
-		-v $$PWD:/work \
-    phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)
+	  -v $$PWD:/work \
+	  phlummox/$(IMAGE_NAME):$(IMAGE_VERSION)
 
 
 # not an especially realistic test (the docker container isn't an especially
@@ -167,7 +177,7 @@ docker-server:
 
 clean:
 	set -vx && rm -rf build \
-		`find -maxdepth 4 -name __pycache__ -o -name '.mypy*' -o -name '*.egg-info' \
-		-o -name .tox -o -name .pytest_cache`
+	  `find -maxdepth 4 -name __pycache__ -o -name '.mypy*' \
+	  -o -name .tox -o -name .pytest_cache`
 
 
