@@ -339,3 +339,33 @@ jobs:
           PYTHONUNBUFFERED=1 tox -vvv -epy39 -- \
             -m vagrant
 
+  build-packer-box:
+    runs-on: macos-10.15
+    needs:
+      - unit-tests
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Check out code
+
+      - name: install packages
+        shell: bash
+        run: |
+          set -x
+
+          brew tap hashicorp/tap
+          brew install hashicorp/tap/packer
+          # for sha256sum
+          brew install coreutils wget
+
+          packer --version
+
+      - name: Build box
+        shell: bash
+        run: |
+          set -x
+
+          cd packer-config
+          export PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
+          make packer-build
+ 

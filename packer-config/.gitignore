@@ -1,0 +1,6 @@
+/output/
+/packer_cache/
+.ubuntu_checksum.md5
+ubuntu2004.json
+virtualbox.box.*
+virtualbox.box
