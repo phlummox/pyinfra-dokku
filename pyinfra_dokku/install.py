@@ -25,7 +25,7 @@ from .util.dokku_plugins  import parse_plugins
 DOKKU_APT_REPO  = 'https://packagecloud.io/dokku/dokku'
 ROOT_ID_PATH    = '/root/.ssh/id_rsa'
 
-def get_expected_debconf_values(fqdn : str) -> Mapping[Tuple[str,str],str]:
+def get_expected_debconf_values(fqdn: str) -> Mapping[Tuple[str, str], str]:
   """
   return a dict containing the expected (parsed) values
   from `debconf-show dokku`.
@@ -61,7 +61,7 @@ def get_dokku_configuration():
   return parse_debconf(stdout)
 
 
-def check_dokku_configuration(fqdn : str):
+def check_dokku_configuration(fqdn: str):
   """
   check that dokku was installed and configured correctly.
   Checks debconf values and contents of `/home/dokku/VHOST`.
@@ -183,8 +183,8 @@ def install_dokku():
 
   # pylint: disable=unexpected-keyword-arg
   apt.key(
-    name="Install Dokku apt key",
-    src="https://packagecloud.io/dokku/dokku/gpgkey",
+    name="Install docker apt key",
+    src="https://download.docker.com/linux/ubuntu/gpg",
     _sudo=True,
   )
 
@@ -192,6 +192,23 @@ def install_dokku():
   linux_id = lsb_info["id"].lower()
   code_name = lsb_info["codename"]
 
+  # pylint: disable=unexpected-keyword-arg
+  apt.repo(
+    name='Add the Docker apt repo',
+    src=(
+        f"deb [arch=amd64] https://download.docker.com/linux/ubuntu {code_name} stable"
+    ),
+    filename="docker",
+    _sudo=True,
+  )
+
+
+  # pylint: disable=unexpected-keyword-arg
+  apt.key(
+    name="Install Dokku apt key",
+    src="https://packagecloud.io/dokku/dokku/gpgkey",
+    _sudo=True,
+  )
 
   # pylint: disable=unexpected-keyword-arg
   apt.repo(
