@@ -7,7 +7,7 @@ install and configure Dokku on an Ubuntu server
 """
 
 from io     import BytesIO
-from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Mapping, Tuple
 
 from pyinfra              import config, host, logger
 from pyinfra.api          import deploy
@@ -24,6 +24,12 @@ from .util.dokku_plugins  import parse_plugins
 
 DOKKU_APT_REPO  = 'https://packagecloud.io/dokku/dokku'
 ROOT_ID_PATH    = '/root/.ssh/id_rsa'
+
+class InstallException(Exception):
+  """
+  Base exception for installation problems.
+  """
+
 
 def get_expected_debconf_values(fqdn: str) -> Mapping[Tuple[str, str], str]:
   """
@@ -57,7 +63,7 @@ def get_dokku_configuration():
   command = 'debconf-show dokku'
   status, stdout, stderr = host.run_shell_command(command=command, sudo=config.SUDO)
   if not status:
-    raise Exception(f"couldn't execute '{command}' on host. stderr = {stderr}")
+    raise InstallException(f"couldn't execute '{command}' on host. stderr = {stderr}")
   return parse_debconf(stdout)
 
 
@@ -66,7 +72,7 @@ def check_dokku_configuration(fqdn: str):
   check that dokku was installed and configured correctly.
   Checks debconf values and contents of `/home/dokku/VHOST`.
 
-  Raises an exception if dokku doesn't appear to be
+  Raises an InstallException if dokku doesn't appear to be
   correctly configured.
 
   Args:
@@ -76,7 +82,8 @@ def check_dokku_configuration(fqdn: str):
 
   debconf_values = get_dokku_configuration()
   if debconf_values != get_expected_debconf_values(fqdn):
-    raise Exception(f"dokku configuration didn't give correct debconf values: {debconf_values}")
+    mesg = f"dokku configuration didn't give correct debconf values: {debconf_values}"
+    raise InstallException(mesg)
 
   vhost_file = "/home/dokku/VHOST"
 
@@ -87,17 +94,17 @@ def check_dokku_configuration(fqdn: str):
       host.get_file(vhost_file, fp)
       conts = fp.getvalue()
     except Exception as ex:
-      logger.debug(f"Wasn't able to get contents of vhost_file: {ex}")
+      logger.debug("Wasn't able to get contents of vhost_file: %s", ex)
       conts = b""
 
   try:
     assert conts.strip() == fqdn.encode("utf8"), \
-        f"conts is {conts}, should be {fqdn}"
+        f"conts is {str(conts)}, should be {fqdn}"
   except AssertionError as ex:
-    logger.error(f"contents of vhost_file '{vhost_file}' not as expected: {ex}")
+    logger.error("contents of vhost_file '%s' not as expected: %s", vhost_file, ex)
 
 
-def get_installed_plugins():
+def get_installed_plugins() -> Dict[str, Any]:
   """
   get a dict of plugin info if dokku is installed,
   or empty dict if not (or if something goes wrong).
@@ -109,7 +116,7 @@ def get_installed_plugins():
     assert status
     return parse_plugins(stdout)
   except Exception as ex:
-    logger.debug(f"Wasn't able to get list of dokku plugins: {ex}")
+    logger.debug("Wasn't able to get list of dokku plugins: %s", ex)
     return {}
 
 def check_letsencrypt_installed():
@@ -240,7 +247,7 @@ def install_dokku():
   # using 'debconf-set-selections', and if not, do so.
 
   debconf_values = get_dokku_configuration()
-  logger.info(f"Got initial Dokku debconf result: {debconf_values}")
+  logger.info("Got initial Dokku debconf result: %s", debconf_values)
 
   has_dokku = host.get_fact(DebPackage, "dokku")
 
@@ -282,7 +289,7 @@ def install_dokku():
 
   python.call(
     name='check Dokku was configured correctly',
-    function=lambda : check_dokku_configuration(fqdn),
+    function=lambda: check_dokku_configuration(fqdn),
   )
 
 @deploy("Install Dokku LetsEncrypt plugin")
@@ -298,9 +305,10 @@ def install_letsencrypt_plugin():
   # install 'letsencrypt' plugin if not already installed
 
   installed_plugins = get_installed_plugins()
-  logger.debug(f"Got installed dokku plugins: {installed_plugins}")
+  logger.debug("Got installed dokku plugins: %s", installed_plugins)
 
   if 'letsencrypt' not in installed_plugins:
+    # pylint: disable=unexpected-keyword-arg
     server.shell(
       name="install letsencrypt plugin",
       commands=(

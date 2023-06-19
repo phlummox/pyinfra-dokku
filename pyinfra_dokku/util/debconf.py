@@ -4,9 +4,9 @@
 parse debconf format
 """
 
-from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union, cast
+from typing import List, Mapping, Sequence, Tuple, Union, cast
 
-def parse_debconf(inp: Union[str,Sequence[str]]) -> Mapping[Tuple[str,str],str] :
+def parse_debconf(inp: Union[str, Sequence[str]]) -> Mapping[Tuple[str, str], str]:
   """
   parse output of `debconf-show`, e.g. something like
 

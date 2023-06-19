@@ -4,9 +4,9 @@
 parse list of dokku plugins
 """
 
-from typing import List, Sequence, Union, cast
+from typing import Any, Dict, List, Sequence, Union, cast
 
-def parse_plugins(inp: Union[str,Sequence[str]]):
+def parse_plugins(inp: Union[str, Sequence[str]]) -> Dict[str, Any]:
   """
   parse output of `dokku plugin:list`, e.g. something like
 
