@@ -10,7 +10,7 @@
 	vagrant-destroy   \
 	vagrant-ssh       \
 	vagrant-up        \
-	vgarant-test
+	vagrant-test
 
 
 .DELETE_ON_ERROR:
