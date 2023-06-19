@@ -46,4 +46,7 @@ $ pyinfra --data fqdn=example.com example.com ./install_dokku.py
 (`--data fqdn=example.com` tells PyInfra what FQDN to use, and the second
 `example.com` is the host to SSH into; these needn't necessarily be the same.)
 
+Also available is a function `install_dokku_prerequisites()`, in case you want
+to do some customization before the Dokku install, or just test the environment.
+
 
