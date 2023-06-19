@@ -132,6 +132,105 @@ def check_letsencrypt_installed():
   assert 'letsencrypt' in installed_plugins, \
     "letsencrypt plugin should be installed"
 
+def _install_dokku_prereqs():
+  """
+  just the prereq steps. Add apt keys for docker and dokku,
+  install some prereq packages, create root ssh key pair if
+  needed.
+
+  Used by `install_dokku` and `install_dokku_prereqs`.
+  """
+
+  # pylint: disable=unexpected-keyword-arg
+  apt.packages(name='Install required packages',
+               packages=[\
+                 'apt-transport-https',
+                 'bzip2',
+                 'ca-certificates',
+                 'curl',
+                 'docker.io',
+                 'git',
+                 'gnupg',
+                 'gnupg-agent',
+                 'lsb-base',
+                 'lsb-release',
+                 'openssh-client',
+                 'openssh-server',
+                 'openssh-server',
+                 'software-properties-common',
+                 'tzdata',
+                 'wget',
+                 ],
+               update=True,
+               _sudo=True,
+              )
+
+  # pylint: disable=unexpected-keyword-arg
+  apt.key(name="Install docker apt key",
+          src="https://download.docker.com/linux/ubuntu/gpg",
+          _sudo=True,
+         )
+
+  lsb_info = host.get_fact(LsbRelease)
+  linux_id = lsb_info["id"].lower()
+  code_name = lsb_info["codename"]
+
+  # pylint: disable=unexpected-keyword-arg
+  apt.repo(name='Add the Docker apt repo',
+           src=(
+               f"deb [arch=amd64] https://download.docker.com/linux/ubuntu {code_name} stable"
+           ),
+           filename="docker",
+           _sudo=True,
+          )
+
+  # pylint: disable=unexpected-keyword-arg
+  apt.key(name="Install Dokku apt key",
+          src="https://packagecloud.io/dokku/dokku/gpgkey",
+          _sudo=True,
+         )
+
+  # pylint: disable=unexpected-keyword-arg
+  apt.repo(name='Add the Dokku apt repo',
+           src=(
+               f"deb {DOKKU_APT_REPO}/{linux_id}/ {code_name} main"
+           ),
+           filename="dokku",
+           _sudo=True,
+          )
+
+  # do we need sudo perms, since this is one of root's
+  # files?
+  has_root_id = host.get_fact(File, ROOT_ID_PATH, sudo=True,)
+
+  if not has_root_id:
+    server.shell(
+      name="create root .ssh key if not exist",
+      commands=(
+          f"sudo ssh-keygen -t rsa -C root@localhost -q -f {ROOT_ID_PATH} -N ''"
+      ),
+      _sudo=True,
+    )
+
+@deploy("Install Dokku prerequisites only")
+def install_dokku_prerequisites():
+  """
+  Convenience function for installing just Dokku's prerequisites
+  (openssh, docker, etc) and creating a root .ssh key pair if needed.
+
+  prerequisites:
+
+  Needs to be an Ubuntu host. (Bionic and focal okay; not
+  sure about others.)
+  """
+
+  # TODO: why isn't config.SUDO working? why is _sudo needed
+  # for all ops?
+  config.SUDO = True
+
+  assert host.get_fact(LinuxName) == 'Ubuntu'
+
+  _install_dokku_prereqs()
 
 @deploy("Install Dokku")
 def install_dokku():
@@ -163,82 +262,7 @@ def install_dokku():
 
   assert host.get_fact(LinuxName) == 'Ubuntu'
 
-  # pylint: disable=unexpected-keyword-arg
-  apt.packages(
-    name='Install required packages',
-    packages=[\
-      'apt-transport-https',
-      'bzip2',
-      'ca-certificates',
-      'curl',
-      'docker.io',
-      'git',
-      'gnupg',
-      'gnupg-agent',
-      'lsb-base',
-      'lsb-release',
-      'openssh-client',
-      'openssh-server',
-      'openssh-server',
-      'software-properties-common',
-      'tzdata',
-      'wget',
-    ],
-    update=True,
-    _sudo=True,
-  )
-
-  # pylint: disable=unexpected-keyword-arg
-  apt.key(
-    name="Install docker apt key",
-    src="https://download.docker.com/linux/ubuntu/gpg",
-    _sudo=True,
-  )
-
-  lsb_info = host.get_fact(LsbRelease)
-  linux_id = lsb_info["id"].lower()
-  code_name = lsb_info["codename"]
-
-  # pylint: disable=unexpected-keyword-arg
-  apt.repo(
-    name='Add the Docker apt repo',
-    src=(
-        f"deb [arch=amd64] https://download.docker.com/linux/ubuntu {code_name} stable"
-    ),
-    filename="docker",
-    _sudo=True,
-  )
-
-
-  # pylint: disable=unexpected-keyword-arg
-  apt.key(
-    name="Install Dokku apt key",
-    src="https://packagecloud.io/dokku/dokku/gpgkey",
-    _sudo=True,
-  )
-
-  # pylint: disable=unexpected-keyword-arg
-  apt.repo(
-    name='Add the Dokku apt repo',
-    src=(
-        f"deb {DOKKU_APT_REPO}/{linux_id}/ {code_name} main"
-    ),
-    filename="dokku",
-    _sudo=True,
-  )
-
-  # do we need sudo perms, since this is one of root's
-  # files?
-  has_root_id = host.get_fact(File, ROOT_ID_PATH, sudo=True,)
-
-  if not has_root_id:
-    server.shell(
-      name="create root .ssh key if not exist",
-      commands=(
-          f"sudo ssh-keygen -t rsa -C root@localhost -q -f {ROOT_ID_PATH} -N ''"
-      ),
-      _sudo=True,
-    )
+  _install_dokku_prereqs()
 
   fqdn = host.data.get("fqdn")
   assert fqdn
