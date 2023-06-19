@@ -22,6 +22,7 @@ Will its parent directory as working directory.
 # pylint: disable=missing-class-docstring,missing-function-docstring
 
 import os
+import os.path
 import subprocess
 import sys
 
@@ -49,22 +50,30 @@ gh_image_id = os.environ["GH_IMAGE_ID"]
 # org.opencontainers.image metadata
 oc_labels = {}
 
-with open("oc_labels", encoding="utf8") as infile:
-  for line in infile.readlines():
-    k, v = line.strip().split(sep="=", maxsplit=1)
-    oc_labels[k] = v
+if os.path.isfile("oc_labels"):
+  with open("oc_labels", encoding="utf8") as infile:
+    for line in infile.readlines():
+      k, v = line.strip().split(sep="=", maxsplit=1)
+      oc_labels[k] = v
+else:
+  print("WARNING: no oc_labels file found, image will be missing some labels",
+        file=sys.stderr
+       )
 
-# override version
-oc_labels["org.opencontainers.image.version"] = version
+if oc_labels:
+  # override version
+  oc_labels["org.opencontainers.image.version"] = version
 
-# org.label-schema metadata
-ls_labels = { "org.label-schema.schema-version":  "1.0",
-              "org.label-schema.build-date":      oc_labels["org.opencontainers.image.created"],
-              "org.label-schema.name":            f"{repo_owner}/{image_name}",
-              "org.label-schema.description":     oc_labels["org.opencontainers.image.description"],
-              "org.label-schema.vcs-url":         oc_labels["org.opencontainers.image.url"],
-              "org.label-schema.vcs-ref":         oc_labels["org.opencontainers.image.revision"],
-              "org.label-schema.version":         version }
+  # org.label-schema metadata
+  ls_labels = { "org.label-schema.schema-version":  "1.0",
+                "org.label-schema.build-date":      oc_labels["org.opencontainers.image.created"],
+                "org.label-schema.name":            f"{repo_owner}/{image_name}",
+                "org.label-schema.description":     oc_labels["org.opencontainers.image.description"],
+                "org.label-schema.vcs-url":         oc_labels["org.opencontainers.image.url"],
+                "org.label-schema.vcs-ref":         oc_labels["org.opencontainers.image.revision"],
+                "org.label-schema.version":         version }
+else:
+  ls_labels = {}
 
 def verbose_run(cmd, **kwargs):
   print("running: ", cmd, file=sys.stderr)
